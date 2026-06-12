@@ -1,0 +1,26 @@
+# Core PDF Extraction
+pymupdf>=1.22.0
+pytesseract>=0.3.10
+pillow>=9.5.0
+
+# Text Splitting & LangChain
+langchain>=0.0.350
+langchain-text-splitters>=0.0.1
+
+# Vector & Lexical Search Indices
+chromadb>=0.4.15
+rank-bm25>=0.2.2
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Local Machine Learning & Embeddings (CPU Optimized)
+sentence-transformers>=2.2.2
+torch>=2.0.0
+sentencepiece>=0.1.99
+
+# LLM Integrations
+google-generativeai>=0.3.0
+python-dotenv>=1.0.0
+
+# User Interface
+streamlit>=1.29.0
