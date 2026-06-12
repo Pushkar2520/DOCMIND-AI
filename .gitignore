@@ -1,0 +1,24 @@
+# Environment variables
+.env
+
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local data indices and databases
+data/
+data/*.db
+data/*.pkl
+data/chroma_db/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# System / IDE files
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
