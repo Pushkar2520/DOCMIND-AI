@@ -7,7 +7,8 @@ __pycache__/
 *$py.class
 
 # Local data indices and databases
-data/
+data/*
+!data/README.md
 data/*.db
 data/*.pkl
 data/chroma_db/

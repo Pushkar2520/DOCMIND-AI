@@ -66,11 +66,11 @@ To build a RAG chatbot capable of answering questions from thousands of PDF page
 ├── data/
 │   ├── chroma_db/              # ChromaDB vector index files
 │   ├── bm25_index.pkl          # Serialized BM25 index & chunk mapping
-│   ├── cleaned_docs.json       # Extracted & cleaned text cache (pages)
+│   ├── corpus.db               # SQLite database caching document texts, pages, and chunks
 │   └── monitoring.db           # SQLite database logging queries & latencies
 ├── src/
-│   ├── ingest.py               # Native/OCR PDF text extraction & cleaning
-│   ├── index.py                # Chunker, vector embedding, and indexing
+│   ├── ingest.py               # Native/OCR PDF text extraction & cleaning (SQLite DB)
+│   ├── index.py                # Chunker, vector embedding, and indexing (Batch & Incremental)
 │   ├── retrieve.py             # Hybrid search (RRF) and Cross-Encoder reranker
 │   └── rag.py                  # Gemini API wrapper with combined stream verification
 ├── scratch/
@@ -88,8 +88,11 @@ To build a RAG chatbot capable of answering questions from thousands of PDF page
 ## 🧬 Core Pipelines & Implementations
 
 ### 1. Ingestion & Chunking
-- **Parsing**: `fitz` extracts native text. If a page yields $<100$ characters, Tesseract OCR renders and extracts it.
-- **Chunking**: LangChain's `RecursiveCharacterTextSplitter` chunks the text into `800` character passages with a `160` character overlap to preserve semantic context across sentence boundaries.
+- **Parsing**: `fitz` extracts native text. If a page contains zero native text blocks or words and has images, Tesseract OCR is triggered. Page extraction and OCR are parallelized using a `ProcessPoolExecutor` across multiple CPU cores.
+- **Incremental Cache**: Stored in a local SQLite database (`data/corpus.db`) using MD5 file hashing. Unaltered PDFs are skipped instantly. Deleted/modified documents are purged and updated incrementally.
+- **Chunking**: LangChain's `RecursiveCharacterTextSplitter` chunks the text into `600` character passages with a `120` character overlap to preserve semantic context.
+- **Streaming Vectors**: Generated embeddings are streamed to ChromaDB in batches of `128` to maintain a low memory profile, avoiding keeping all float lists in RAM.
+- **BM25 Rebuild**: Recreated on index updates by loading metadata directly from the SQLite `chunks` table.
 
 ### 2. Hybrid Retrieval (Reciprocal Rank Fusion - RRF)
 To query our corpus, we retrieve candidates from both Vector Search and BM25 Search. We combine the lists using Reciprocal Rank Fusion (RRF):
