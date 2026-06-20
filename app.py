@@ -232,24 +232,27 @@ with st.sidebar:
     
     # Check if indices are loaded
     indices_status = "🔴 Missing Indices"
-    ingestion_cache = "data/cleaned_docs.json"
-    chromadb_dir = "data/chroma_db"
-    bm25_file = "data/bm25_index.pkl"
+    DATA_DIR = os.getenv("DATA_DIR", "data")
+    corpus_db = os.path.join(DATA_DIR, "corpus.db")
+    chromadb_dir = os.path.join(DATA_DIR, "chroma_db")
+    bm25_file = os.path.join(DATA_DIR, "bm25_index.pkl")
     
-    if os.path.exists(ingestion_cache) and os.path.exists(chromadb_dir) and os.path.exists(bm25_file):
+    if os.path.exists(corpus_db) and os.path.exists(chromadb_dir) and os.path.exists(bm25_file):
         indices_status = "🟢 Ready"
         
     st.markdown(f"**Index Status**: {indices_status}")
     
     # Simple document list
-    if os.path.exists(ingestion_cache):
+    if os.path.exists(corpus_db):
         try:
-            with open(ingestion_cache, "r", encoding="utf-8") as f:
-                docs = json.load(f)
-                filenames = list(set(d["filename"] for d in docs))
-                st.markdown(f"**Ingested PDFs ({len(filenames)})**:")
-                for f_name in sorted(filenames):
-                    st.markdown(f"- `{f_name}`")
+            conn = sqlite3.connect(corpus_db)
+            cursor = conn.cursor()
+            cursor.execute("SELECT filename FROM documents")
+            filenames = [row[0] for row in cursor.fetchall()]
+            conn.close()
+            st.markdown(f"**Ingested PDFs ({len(filenames)})**:")
+            for f_name in sorted(filenames):
+                st.markdown(f"- `{f_name}`")
         except Exception:
             st.markdown("*Error loading document names.*")
     else:

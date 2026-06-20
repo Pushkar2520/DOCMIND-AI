@@ -12,8 +12,12 @@ import chromadb
 # CPU Thread Optimization for PyTorch local inference
 torch.set_num_threads(4)
 
-CHROMA_DB_PATH = "data/chroma_db"
-BM25_INDEX_PATH = "data/bm25_index.pkl"
+from dotenv import load_dotenv
+load_dotenv()
+
+DATA_DIR = os.getenv("DATA_DIR", "data")
+CHROMA_DB_PATH = os.path.join(DATA_DIR, "chroma_db")
+BM25_INDEX_PATH = os.path.join(DATA_DIR, "bm25_index.pkl")
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -66,7 +70,7 @@ def tokenize_bm25(text):
 
 # LRU Cache to store query embeddings (returns tuple to be hashable)
 @lru_cache(maxsize=128)
-def embed_query(query_text):
+def embed_query(query_text): 
     """Embed query using SentenceTransformers, cached in memory."""
     model = get_embedding_model()
     emb = model.encode(query_text, convert_to_numpy=True)
@@ -286,6 +290,7 @@ def retrieve_and_rerank(query, retrieve_top_k=10, final_top_k=3, use_reranker=Tr
     return final_chunks, profile_times
 
 if __name__ == "__main__":
+    # tests whether retrieval is working correctly.
     print("Testing retrieval engine...")
     test_query = "What is docker?"
     results, times = retrieve_and_rerank(test_query)
