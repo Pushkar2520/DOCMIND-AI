@@ -87,19 +87,29 @@ Begin your response now:"""
     
     for attempt in range(max_retries):
         try:
-            response_stream = model.generate_content(prompt, stream=True)
+            # Set a 15-second request timeout to prevent hanging indefinitely
+            response_stream = model.generate_content(
+                prompt, 
+                stream=True,
+                request_options={"timeout": 15.0}
+            )
             break
         except ResourceExhausted as e:
             if attempt == max_retries - 1:
                 yield "text", "[API Rate Limit Exceeded: Please wait a moment or enter a new Gemini API Key in the sidebar.]"
                 yield "data", ("[API Rate Limit Exceeded: Please wait a moment or enter a new Gemini API Key in the sidebar.]", {"status": "API_ERROR", "confidence": 0, "explanation": "Rate limit exceeded"})
                 return
+            yield "text", f"\n[Gemini API is rate-limited, retrying in {delay}s (Attempt {attempt+1}/{max_retries})...]\n"
             time.sleep(delay)
             delay *= 2
         except Exception as e:
-            yield "text", f"Error calling LLM: {e}"
-            yield "data", (f"Error calling LLM: {e}", {"status": "ERROR", "confidence": 0, "explanation": str(e)})
-            return
+            if attempt == max_retries - 1:
+                yield "text", f"\n[Gemini API connection error/timeout: {e}. Please wait a moment or enter a new API Key in the sidebar.]"
+                yield "data", (f"Gemini API connection error: {e}", {"status": "API_ERROR", "confidence": 0, "explanation": str(e)})
+                return
+            yield "text", f"\n[Gemini API is busy or timed out, retrying in {delay}s (Attempt {attempt+1}/{max_retries})...]\n"
+            time.sleep(delay)
+            delay *= 2
 
     if response_stream is None:
         return
